@@ -1,5 +1,6 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Shared.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -27,9 +28,12 @@ namespace BlobStoreDemo
                 // SetCustomBlobMetadata(container);
                 // ListCustomMetadata(container);
                 //CopyBlobs(container);
-                UploadProfilesinSubDirectories(container);
+                // UploadProfilesinSubDirectories(container);
+
+                //CreateSharedAccessPolicy(container);
+                CreateCorsRules(blobClient);
                 Console.WriteLine("Done");
-                Console.ReadLine();
+                Console.ReadKey();
             }
            catch(Exception e)
             {
@@ -91,6 +95,34 @@ namespace BlobStoreDemo
             {
                 cloudBlockBlob.UploadFromStream(fileStream);
             }
+        }
+
+        private static void CreateSharedAccessPolicy(CloudBlobContainer container)
+        {
+            var sharedAccessPolicy = new SharedAccessBlobPolicy
+            {
+                SharedAccessExpiryTime = DateTime.Now.AddHours(24),
+                Permissions = SharedAccessBlobPermissions.Read
+            };
+
+            BlobContainerPermissions permissions = new BlobContainerPermissions();
+            permissions.SharedAccessPolicies.Clear();
+            permissions.SharedAccessPolicies.Add("pravipolicy", sharedAccessPolicy);
+            container.SetPermissions(permissions);
+        }
+
+        private static void CreateCorsRules(CloudBlobClient blobClient)
+        {
+            ServiceProperties properties = new ServiceProperties();
+            properties.Cors = new CorsProperties();
+            properties.Cors.CorsRules.Add(
+                new CorsRule
+                {
+                     AllowedMethods =CorsHttpMethods.Get,
+                     MaxAgeInSeconds=3600, 
+                     AllowedOrigins =new List<string> { "http://localhost:portnumber" }                }
+                );
+            blobClient.SetServiceProperties(properties);
         }
     }
 }
